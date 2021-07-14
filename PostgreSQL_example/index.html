@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>PostgreSQL example</title>
+</head>
+
+<body>
+    <h1 class="text-center">PostgreSQL example</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Issues</th>
+                <th scope="col">Description</th>
+                <th scope="col">Assigned to</th>
+            </tr>
+        </thead>
+        <tbody id="tbodyIssues">
+            <tr>
+                <th scope="row" id="issue1">1</th>
+                <td>
+                    <input type="text" id="input" value="Bad UI Display">
+                </td>
+                <td>
+                    <textarea id="textarea" rows="3">In contact view, the text "click here" is not aligned.</textarea>
+                </td>
+                <td>
+                    <select class="form-select">
+                        <option selected>Select someone</option>
+                        <option value="Vivien">Vivien</option>
+                        <option value="Annabelle">Annabelle</option>
+                        <option value="Richard">Richard</option>
+                        <option value="Katherine ">Katherine </option>
+                    </select>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <script src="main.js"></script>
+</body>
+
+</html>
