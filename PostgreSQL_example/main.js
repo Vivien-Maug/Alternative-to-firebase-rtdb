@@ -53,3 +53,28 @@ function modifyIssue(id, key, value) {
         document.getElementById(`issueAssignedTo${id}`).getElementsByTagName('option')[listName.indexOf(value) + 1].selected = 'selected';
     }
 }
+
+let websocket = null;
+try {
+    websocket = new WebSocket("wss://localhost:8000");
+} catch (err) {
+    console.error(err);
+}
+
+websocket.onerror = function (error) {
+    console.error(error);
+};
+
+websocket.onopen = function (event) {
+    console.log("Connection established.");
+
+    this.onclose = function (event) {
+        console.log("Connection completed.");
+    };
+
+    this.onmessage = function (event) {
+        console.log("Message:", event.data);
+    };
+
+    this.send("Hello from client!");
+};

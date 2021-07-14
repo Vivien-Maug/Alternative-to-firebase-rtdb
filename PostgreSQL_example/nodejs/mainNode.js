@@ -24,7 +24,7 @@ const options = {
 
 const relativePathFileWeb = "..";
 
-https.createServer(options, function (req, res) {
+const httpsServer = https.createServer(options, function (req, res) {
     res.writeHead(200);
     let fileName;
     switch (req.url) {
@@ -49,19 +49,14 @@ console.log('Https server launched');
 /* ----------------------- Part for WebSocket ----------------------- */
 // Todo, separe fonctionnality (httpsServer and Websocket server) in two file
 
-const server = https.createServer({
-    cert: options.cert,
-    key: options.key
-});
-const wss = new WebSocket.Server({ server });
+
+const wss = new WebSocket.Server({ server: httpsServer });
 
 wss.on('connection', function connection(ws) {
     ws.on('message', function incoming(message) {
-        console.log('received: %s', message);
+        console.log('Received: %s', message);
     });
 
-    ws.send('something');
+    ws.send('Hello from server');
 });
-
-server.listen(8080);
 console.log('WebSocket server launched');
