@@ -3,12 +3,14 @@ const fs = require('fs');
 const { Client } = require('pg'); // https://node-postgres.com/
 const WebSocket = require('ws');  // https://github.com/websockets/ws
 
-const client = new Client({ // TODO: Add to .gitignore a file with all data
-    host: 'localhost',
-    port: 5432,
-    database: 'TODO',
-    user: 'TODO',
-    password: 'TODO',
+const dataConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+
+const client = new Client({
+    host: dataConfig.host,
+    port: dataConfig.port,
+    database: dataConfig.database,
+    user: dataConfig.user,
+    password: dataConfig.password,
 });
 
 client.connect()

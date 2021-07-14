@@ -3,3 +3,5 @@
 This file contains the reference example in PostgreSQL with WebSocket.
 
 Node Https Server is build like that: https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTPS-server/
+
+PostgreSQL is configured mainly with https://doc.ubuntu-fr.org/postgresql
