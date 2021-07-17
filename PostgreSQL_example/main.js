@@ -9,9 +9,6 @@ const issueName = {
     assignedTo: 2
 };
 
-addIssue("2", "Bad translation", "blabla translation", "Vivien");
-addIssue("3", "Bad ", "blabla ", "Paul");
-
 
 function addIssue(id, name, description, assignedTo) {
     const trHtml = document.createElement("tr");
@@ -29,7 +26,7 @@ function addIssue(id, name, description, assignedTo) {
     selectAssigned.setAttribute("id", `issueAssignedTo${id}`);
     selectAssigned.innerHTML = "<option>Select someone</option>";
     listName.forEach(name => {
-        if (name === assignedTo)
+        if (name === listName[assignedTo])
             selectAssigned.innerHTML += `<option selected>${name}</option>`;
         else
             selectAssigned.innerHTML += `<option>${name}</option>`;
@@ -57,24 +54,28 @@ function modifyIssue(id, key, value) {
 let websocket = null;
 try {
     websocket = new WebSocket("wss://localhost:8000");
+    websocket.onerror = function (error) {
+        console.error(error);
+    };
+
+    websocket.onopen = function (event) {
+        console.log("Connection established.");
+
+        this.onclose = function (event) {
+            console.log("Connection completed.");
+        };
+
+        this.onmessage = function (event) {
+            console.log("Message:", event.data);
+            if (event.data !== "error") {
+                JSON.parse(event.data).forEach(issue => {
+                    addIssue(issue.issue_id, issue.issue_name, issue.issue_description, issue.member_id); // TODO: manage case NULL for issue.member_id
+                });
+            }
+        };
+    };
 } catch (err) {
     console.error(err);
 }
 
-websocket.onerror = function (error) {
-    console.error(error);
-};
 
-websocket.onopen = function (event) {
-    console.log("Connection established.");
-
-    this.onclose = function (event) {
-        console.log("Connection completed.");
-    };
-
-    this.onmessage = function (event) {
-        console.log("Message:", event.data);
-    };
-
-    this.send("Hello from client!");
-};
