@@ -1,16 +1,15 @@
 
-// Todo: change it by getting from database, and manage the case listName.indexOf in modifyIssue
-const listName = ["Vivien", "Aria", "Paul", "Anne"]
+// Todo: and manage the case membersName.indexOf in modifyIssue
+const membersName = new Map();
 
-
-const issueName = {
+const issueNameRow = {
     name: 0,
     desc: 1,
-    assignedTo: 2
+    member: 2
 };
 
 
-function addIssue(id, name, description, assignedTo) {
+function addIssue(id, name, description, member_id) {
     const trHtml = document.createElement("tr");
     const thId = document.createElement("th");
     thId.innerHTML = id;
@@ -25,8 +24,8 @@ function addIssue(id, name, description, assignedTo) {
     selectAssigned.setAttribute("class", "form-select");
     selectAssigned.setAttribute("id", `issueAssignedTo${id}`);
     selectAssigned.innerHTML = "<option>Select someone</option>";
-    listName.forEach(name => {
-        if (name === listName[assignedTo])
+    membersName.forEach((name, id) => {
+        if (member_id === id)
             selectAssigned.innerHTML += `<option selected>${name}</option>`;
         else
             selectAssigned.innerHTML += `<option>${name}</option>`;
@@ -40,14 +39,14 @@ function addIssue(id, name, description, assignedTo) {
 }
 
 function modifyIssue(id, key, value) {
-    if (key === issueName.name) {
+    if (key === issueNameRow.name) {
         document.getElementById(`issueName${id}`).value = value;
     }
-    else if (key === issueName.desc) {
+    else if (key === issueNameRow.desc) {
         document.getElementById(`issueDescription${id}`).value = value;
     }
-    else if (key === issueName.assignedTo) {
-        document.getElementById(`issueAssignedTo${id}`).getElementsByTagName('option')[listName.indexOf(value) + 1].selected = 'selected';
+    else if (key === issueNameRow.member) {
+        document.getElementById(`issueAssignedTo${id}`).getElementsByTagName('option')[value].selected = 'selected';
     }
 }
 
@@ -68,7 +67,14 @@ try {
         this.onmessage = function (event) {
             console.log("Message:", event.data);
             if (event.data !== "error") {
-                JSON.parse(event.data).forEach(issue => {
+                const data = JSON.parse(event.data);
+                const membersLst = data[0];
+                const issuesLst = data[1];
+                membersLst.forEach(member => {
+                    membersName.set(member.member_id, member.member_name);
+                });
+
+                issuesLst.forEach(issue => {
                     addIssue(issue.issue_id, issue.issue_name, issue.issue_description, issue.member_id); // TODO: manage case NULL for issue.member_id
                 });
             }
@@ -77,5 +83,3 @@ try {
 } catch (err) {
     console.error(err);
 }
-
-

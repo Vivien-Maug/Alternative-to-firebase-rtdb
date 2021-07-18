@@ -23,8 +23,10 @@ client.connect()
 if (resetDatabase) {
     const sqlResetQuery = fs.readFileSync('reset_table.sql', 'utf8');
     client.query(sqlResetQuery)
-        // .then(res => console.log(res))
+        .then(res => console.log("Database reset"))
         .catch(e => console.error(e.stack));
+} else {
+    console.log("Database not reset")
 }
 
 const options = {
@@ -80,8 +82,14 @@ wss.on('connection', function connection(ws) {
             console.log("One WebSocket close");
         }
     });
+    let initData = [undefined, undefined];
     client.query('SELECT * FROM issue')
-        .then(res => ws.send(JSON.stringify(res.rows)))
+        // .then(res => ws.send(JSON.stringify(res.rows)))
+        .then(res => { initData[1] = res.rows; })
+        .catch(e => { ws.send("error"); console.error(e.stack) });
+    client.query('SELECT * FROM member')
+        // .then(res => ws.send(JSON.stringify(res.rows)))
+        .then(res => { initData[0] = res.rows; ws.send(JSON.stringify(initData)) })
         .catch(e => { ws.send("error"); console.error(e.stack) });
 
 });

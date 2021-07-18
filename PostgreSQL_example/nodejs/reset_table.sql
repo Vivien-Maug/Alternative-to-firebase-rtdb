@@ -23,7 +23,7 @@ INSERT INTO member (member_name) VALUES
 
 INSERT INTO issue (issue_name, issue_description, member_id) VALUES
     ('Bad UI Display', 'In contact view, the text "click here" is not aligned.', 1), 
-    ('Bad translation', 'blabla description', 2), 
-    ('Issue Name num 3', 'Issue', 3);
+    ('Bad translation', 'Description 2', 2), 
+    ('Issue Name num 3', 'Description Issue 3', 3);
 
 
