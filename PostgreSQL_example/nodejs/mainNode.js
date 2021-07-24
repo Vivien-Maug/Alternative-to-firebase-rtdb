@@ -8,6 +8,31 @@ const dataConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 const isDebugLogEnable = true;
 const resetDatabase = true;
 
+const issueNameRow = {
+    name: 0,
+    desc: 1,
+    member: 2,
+    all: 3
+};
+const memberNameRow = {
+    id: 0,
+    name: 1,
+    all: 2
+};
+const action = {
+    init: 0,
+    addToDB: 1,
+    modifyToDB: 2,
+    removeToDB: 3,
+    DB_new: 4,
+    DB_modify: 5,
+    DB_remove: 6
+};
+const table = {
+    member: 0,
+    issue: 1
+};
+
 const client = new Client({
     host: dataConfig.host,
     port: dataConfig.port,
@@ -83,14 +108,25 @@ wss.on('connection', function connection(ws) {
         }
     });
     let initData = [undefined, undefined];
-    client.query('SELECT * FROM issue')
-        // .then(res => ws.send(JSON.stringify(res.rows)))
-        .then(res => { initData[1] = res.rows; })
-        .catch(e => { ws.send("error"); console.error(e.stack) });
+
     client.query('SELECT * FROM member')
-        // .then(res => ws.send(JSON.stringify(res.rows)))
-        .then(res => { initData[0] = res.rows; ws.send(JSON.stringify(initData)) })
-        .catch(e => { ws.send("error"); console.error(e.stack) });
+        .then(res => {
+            initData[table.member] = res.rows;
+            client.query('SELECT * FROM issue')
+                .then(res => {
+                    initData[table.issue] = res.rows;
+                    ws.send(action.init + JSON.stringify(initData));
+                })
+                .catch(e => {
+                    ws.send("error");
+                    console.error(e.stack)
+                });
+        })
+        .catch(e => {
+            ws.send("error");
+            console.error(e.stack)
+        });
+
 
 });
 

@@ -9,8 +9,8 @@ CREATE TABLE member (
 CREATE TABLE issue (
     issue_id             serial PRIMARY KEY,
     issue_name           VARCHAR ( 50 ) NOT NULL,
-    issue_description    VARCHAR ( 255 ),
-    member_id            INT ,
+    issue_description    VARCHAR ( 250 ),
+    member_id            INT,
     FOREIGN KEY (member_id)
         REFERENCES member (member_id)
 );
