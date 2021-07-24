@@ -3,10 +3,11 @@
 const membersName = new Map();
 
 const issueNameRow = {
-    name: 0,
-    desc: 1,
-    member: 2,
-    all: 3
+    id: 0,
+    name: 1,
+    desc: 2,
+    member: 3,
+    all: 4
 };
 const memberNameRow = {
     id: 0,
@@ -59,12 +60,25 @@ function addIssue(id, name, description, member_id) {
 
     document.getElementById(`issueName${id}`).addEventListener('input', (event) => {
         console.log(`You modify: ${event.target.value}`);
+        websocket.send("" + action.modifyToDB + table.issue + issueNameRow.name + JSON.stringify([id, event.target.value]));
     });
     document.getElementById(`issueDescription${id}`).addEventListener('input', (event) => {
         console.log(`You modify: ${event.target.value}`);
+        websocket.send("" + action.modifyToDB + table.issue + issueNameRow.desc + JSON.stringify([id, event.target.value]));
     });
     document.getElementById(`issueAssignedTo${id}`).addEventListener('input', (event) => {
         console.log(`You modify: ${event.target.value}`);
+        let idMember;
+        membersName.forEach((name, id) => {
+            if (event.target.value === name) {
+                idMember = id;
+            }
+        });
+        if (idMember) {
+            websocket.send("" + action.modifyToDB + table.issue + issueNameRow.member + JSON.stringify([id, idMember]));
+        } else {
+            // TODO
+        }
     });
 }
 
@@ -95,18 +109,17 @@ try {
         };
 
         this.onmessage = function (event) {
-            console.log("Message:", event.data);
             if (event.data !== "error") {
                 if (event.data.startsWith(action.init)) {
+                    console.log(JSON.parse(event.data.substring(1)));
                     const data = JSON.parse(event.data.substring(1));
                     const membersLst = data[0];
                     const issuesLst = data[1];
                     membersLst.forEach(member => {
-                        membersName.set(member.member_id, member.member_name);
+                        membersName.set(member[memberNameRow.id], member[memberNameRow.name]);
                     });
-
                     issuesLst.forEach(issue => {
-                        addIssue(issue.issue_id, issue.issue_name, issue.issue_description, issue.member_id); // TODO: manage case NULL for issue.member_id
+                        addIssue(issue[issueNameRow.id], issue[issueNameRow.name], issue[issueNameRow.desc], issue[issueNameRow.member]); // TODO: manage case NULL for issue.member_id
                     });
                 }
 

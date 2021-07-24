@@ -9,10 +9,11 @@ const isDebugLogEnable = true;
 const resetDatabase = true;
 
 const issueNameRow = {
-    name: 0,
-    desc: 1,
-    member: 2,
-    all: 3
+    id: 0,
+    name: 1,
+    desc: 2,
+    member: 3,
+    all: 4
 };
 const memberNameRow = {
     id: 0,
@@ -100,7 +101,16 @@ wss.on('connection', function connection(ws) {
     ws.on('pong', () => { ws.isAlive = true; });
     ws.on('message', function incoming(message) {
         console.log('Received: %s', message); // After the tests are conclusive, display this only on isDebugLogEnable value
-        ws.send('Hello from server');
+        console.log(message.charAt(0));
+
+        switch (parseInt(message.charAt(0), 10)) {
+            case action.modifyToDB:
+                modifyToDB(message.charAt(1), message.charAt(2), JSON.parse(message.substring(3)));
+                break;
+
+            default:
+                break;
+        }
     });
     ws.on('close', function close() {
         if (isDebugLogEnable) {
@@ -109,11 +119,17 @@ wss.on('connection', function connection(ws) {
     });
     let initData = [undefined, undefined];
 
-    client.query('SELECT * FROM member')
+    client.query('SELECT * FROM member ORDER BY member_id;')
         .then(res => {
+            for (let i = 0; i < res.rows.length; i++) {
+                res.rows[i] = [res.rows[i]['member_id'], res.rows[i]['member_name']];
+            }
             initData[table.member] = res.rows;
-            client.query('SELECT * FROM issue')
+            client.query('SELECT * FROM issue ORDER BY issue_id;')
                 .then(res => {
+                    for (let i = 0; i < res.rows.length; i++) {
+                        res.rows[i] = [res.rows[i]['issue_id'], res.rows[i]['issue_name'], res.rows[i]['issue_description'], res.rows[i]['member_id']];
+                    }
                     initData[table.issue] = res.rows;
                     ws.send(action.init + JSON.stringify(initData));
                 })
@@ -145,3 +161,25 @@ setInterval(() => {
         ws.ping();
     });
 }, 3000);
+
+function modifyToDB(table, rowIdToModify, data, ws) {
+    /* 
+        No modification of the issue_id is possible, then no issue_id in rowNameDB.
+        We need to manage the case issueNameRow.all, for now just ignore it
+    */
+    const rowNameDB = ["issue_name", "issue_description", "member_id"];
+    const rowName = rowNameDB[rowIdToModify - 1];
+    const values = [data[0], data[1]];
+
+    const query = `UPDATE issue SET ${rowName} = $2 WHERE issue_id = $1;`
+
+    client
+        .query(query, values)
+        .then(res => {
+            // sent ok to client
+        })
+        .catch(e => console.error(e.stack))
+    console.log(query);
+    console.log(values);
+
+}
