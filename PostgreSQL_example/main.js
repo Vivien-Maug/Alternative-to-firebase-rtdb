@@ -61,7 +61,7 @@ function addIssue(id, name, description, member_id, toHighlight = false) {
     tdAssigned.appendChild(selectAssigned);
     const tdButtonRemove = document.createElement("td");
     // Icon from https://icons.getbootstrap.com/icons/trash/
-    tdButtonRemove.innerHTML = `<div class="d-grid gap-2"><button type="button" class="btn btn-warning btn-lg mx-auto"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-trash"
+    tdButtonRemove.innerHTML = `<div class="d-grid gap-2"><button type="button" class="btn btn-warning btn-lg mx-auto" id="issueRemove${id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-trash"
     viewBox="0 0 16 16">
     <path
         d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
@@ -103,6 +103,11 @@ function addIssue(id, name, description, member_id, toHighlight = false) {
         });
         websocket.send("" + action.modifyToDB + table.issue + issueNameRow.member + JSON.stringify([id, idMember ? idMember : undefined]));
     });
+    document.getElementById(`issueRemove${id}`).addEventListener('click', (event) => {
+        websocket.send("" + action.removeToDB + table.issue + id);
+        // The deletion is performed after the server has accepted it
+        // TODO: Need to add an animation if this takes too long
+    });
 }
 
 function modifyIssue(id, key, value) {
@@ -127,14 +132,14 @@ function modifyIssue(id, key, value) {
         document.getElementById(elementId).value = value;
     }
 
-    document.getElementById(elementId).classList.add("bg-danger");
-    document.getElementById(elementId).classList.add("text-white");
+    document.getElementById(elementId).classList.add("bg-info");
+    document.getElementById(elementId).classList.add("text-dark");
     if (highlightElements.has(elementId)) {
         clearTimeout(highlightElements.get(elementId));
     }
     const timeout = setTimeout(() => {
-        document.getElementById(elementId).classList.remove("bg-danger");
-        document.getElementById(elementId).classList.remove("text-white");
+        document.getElementById(elementId).classList.remove("bg-info");
+        document.getElementById(elementId).classList.remove("text-dark");
         highlightElements.delete(elementId);
     }, 1000);
     highlightElements.set(elementId, timeout);
@@ -195,15 +200,24 @@ try {
                                 break;
                         }
                         break;
+                    case action.DB_remove:
+                        const id = event.data.substring(2);
+                        switch (parseInt(event.data.charAt(1))) {
+                            case table.member:
+                                // TODO
+                                break;
+                            case table.issue:
+                                document.getElementById(`issueTr${id}`).remove();
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
 
                     default:
                         console.error("Bad data in websocket");
                         break;
                 }
-                if (event.data.startsWith(action.init)) {
-
-                }
-
             }
         };
     };
@@ -213,5 +227,6 @@ try {
 
 document.getElementById("btnNewIssue").addEventListener('click', (event) => {
     websocket.send("" + action.addToDB + table.issue);
-    // TODO: Need to add an animation if this take too long
+    // The addition is done after the server has accepted it
+    // TODO: Need to add an animation if this takes too long
 });

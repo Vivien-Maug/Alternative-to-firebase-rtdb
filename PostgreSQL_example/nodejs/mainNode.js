@@ -115,6 +115,14 @@ wss.on('connection', function connection(ws) {
                 addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
                     wss.clients.forEach(wsToNotify => {
                         wsToNotify.send(action.DB_new + message.charAt(1) + newId);
+
+                    });
+                });
+                break;
+            case action.removeToDB:
+                removeToDB(ws, parseInt(message.charAt(1), 10), parseInt(message.substring(2), 10), (id) => {
+                    wss.clients.forEach(wsToNotify => {
+                        wsToNotify.send(action.DB_remove + message.charAt(1) + id);
                     });
                 });
 
@@ -203,8 +211,6 @@ function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
     }
 }
 
-
-
 function addToDB(ws, tableId, callback) {
     switch (tableId) {
         case table.member:
@@ -221,6 +227,28 @@ function addToDB(ws, tableId, callback) {
                 })
             break;
         default:
+            ws.send("error");
+            break;
+    }
+}
+
+function removeToDB(ws, tableId, id, callback) {
+    switch (tableId) {
+        case table.member:
+            break;
+        case table.issue:
+            client
+                .query(`DELETE FROM issue WHERE issue_id = $1;`, [id])
+                .then(() => {
+                    callback(id);
+                })
+                .catch(e => {
+                    console.error(e.stack);
+                    ws.send("error");
+                })
+            break;
+        default:
+            ws.send("error");
             break;
     }
 }
