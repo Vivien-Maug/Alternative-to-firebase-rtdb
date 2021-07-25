@@ -100,7 +100,6 @@ wss.on('connection', function connection(ws) {
     ws.on('pong', () => { ws.isAlive = true; });
     ws.on('message', function incoming(message) {
         console.log('Received: %s', message); // After the tests are conclusive, display this only on isDebugLogEnable value
-        console.log(message.charAt(0));
 
         switch (parseInt(message.charAt(0), 10)) {
             case action.modifyToDB:
