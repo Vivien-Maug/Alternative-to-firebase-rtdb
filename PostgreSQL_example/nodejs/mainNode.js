@@ -33,6 +33,9 @@ const table = {
     member: 0,
     issue: 1
 };
+const error = {
+    deleteMemberAssigned: 0
+}
 
 const client = new Client({
     host: dataConfig.host,
@@ -112,10 +115,10 @@ wss.on('connection', function connection(ws) {
                 });
                 break;
             case action.addToDB:
+                console.log("test");
                 addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
                     wss.clients.forEach(wsToNotify => {
                         wsToNotify.send(action.DB_new + message.charAt(1) + newId);
-
                     });
                 });
                 break;
@@ -182,9 +185,19 @@ setInterval(() => {
 }, 3000);
 
 function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
+    let values;
+    let query;
     switch (tableId) {
         case table.member:
-
+            values = [data[0], data[1]];
+            query = `UPDATE member SET member_name = $2 WHERE member_id = $1;`
+            client
+                .query(query, values)
+                .then(res => {
+                    // sent ok to client
+                    callback();
+                })
+                .catch(e => console.error(e.stack));
             break;
         case table.issue:
             /* 
@@ -193,9 +206,9 @@ function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
             */
             const rowNameDB = ["issue_name", "issue_description", "member_id"];
             const rowName = rowNameDB[rowIdToModify - 1];
-            const values = [data[0], data[1]];
+            values = [data[0], data[1]];
 
-            const query = `UPDATE issue SET ${rowName} = $2 WHERE issue_id = $1;`
+            query = `UPDATE issue SET ${rowName} = $2 WHERE issue_id = $1;`
 
             client
                 .query(query, values)
@@ -214,10 +227,19 @@ function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
 function addToDB(ws, tableId, callback) {
     switch (tableId) {
         case table.member:
+            client
+                .query("INSERT INTO member (member_name) VALUES ('') RETURNING member_id;")
+                .then(res => {
+                    callback(res.rows[0]['member_id']);
+                })
+                .catch(e => {
+                    console.error(e.stack);
+                    ws.send("error");
+                })
             break;
         case table.issue:
             client
-                .query("INSERT INTO issue (issue_name) VALUES ('New issue') RETURNING issue_id;")
+                .query("INSERT INTO issue (issue_name) VALUES ('') RETURNING issue_id;")
                 .then(res => {
                     callback(res.rows[0]['issue_id']);
                 })
@@ -235,6 +257,28 @@ function addToDB(ws, tableId, callback) {
 function removeToDB(ws, tableId, id, callback) {
     switch (tableId) {
         case table.member:
+            client
+                .query(`SELECT COUNT(member_id) FROM issue WHERE member_id = $1;`, [id])
+                .then((res) => {
+                    if (res.rows[0].count == 0) {
+                        client
+                            .query(`DELETE FROM member WHERE member_id = $1;`, [id])
+                            .then(() => {
+                                callback(id);
+                            })
+                            .catch(e => {
+                                console.error(e.stack);
+                                ws.send("error" + error.deleteMemberAssigned + id);
+                            });
+                    } else {
+                        // TODO
+                    }
+                })
+                .catch(e => {
+                    console.error(e.stack);
+                    ws.send("error");
+                });
+
             break;
         case table.issue:
             client
@@ -245,7 +289,7 @@ function removeToDB(ws, tableId, id, callback) {
                 .catch(e => {
                     console.error(e.stack);
                     ws.send("error");
-                })
+                });
             break;
         default:
             ws.send("error");

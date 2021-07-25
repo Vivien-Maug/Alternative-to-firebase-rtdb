@@ -11,21 +11,47 @@
 <body>
     <h1 class="text-center">PostgreSQL example</h1>
 
-    <table class="table table-bordered align-middle ">
-        <thead>
-            <tr>
-                <th scope="col" class="text-center">#</th>
-                <th scope="col" class="text-center">Issues</th>
-                <th scope="col" class="text-center">Description</th>
-                <th scope="col" class="text-center">Assigned to</th>
-                <th scope="col" class="text-center">Remove action</th>
-            </tr>
-        </thead>
-        <tbody id="tbodyIssues">
-        </tbody>
-    </table>
-    <div class="d-grid gap-2">
-        <button class="btn btn-primary btn-lg" id="btnNewIssue" type="button">Add new issue</button>
+    <nav class="navbar navbar-light bg-light mb-3 mt-3">
+        <form class="container-fluid justify-content-center">
+            <button type="button" class="btn btn-secondary me-3" id="btnShowMembers">Members</button>
+            <button type="button" class="btn btn-outline-secondary ms-3" id="btnShowIssues">Issues</button>
+        </form>
+    </nav>
+
+    <div id="divMembers">
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th scope="col" class="text-center">#</th>
+                    <th scope="col" class="text-center">Name</th>
+                    <th scope="col" class="text-center">Remove action</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyMembers">
+            </tbody>
+        </table>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-lg" id="btnNewMember" type="button">Add new member</button>
+        </div>
+    </div>
+
+    <div id="divIssues" style="display: none">
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th scope="col" class="text-center">#</th>
+                    <th scope="col" class="text-center">Issues</th>
+                    <th scope="col" class="text-center">Description</th>
+                    <th scope="col" class="text-center">Assigned to</th>
+                    <th scope="col" class="text-center">Remove action</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyIssues">
+            </tbody>
+        </table>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-lg" id="btnNewIssue" type="button">Add new issue</button>
+        </div>
     </div>
     <script src="main.js"></script>
 </body>
