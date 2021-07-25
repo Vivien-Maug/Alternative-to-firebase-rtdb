@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS member;
 
 CREATE TABLE member (
     member_id               serial PRIMARY KEY,
-    member_name             VARCHAR ( 30 ) NOT NULL
+    member_name             VARCHAR ( 30 )
 );
 
 CREATE TABLE issue (
@@ -24,6 +24,9 @@ INSERT INTO member (member_name) VALUES
 INSERT INTO issue (issue_name, issue_description, member_id) VALUES
     ('Bad UI Display', 'In contact view, the text "click here" is not aligned.', 1), 
     ('Bad translation', 'Description 2', 2), 
-    ('Issue Name num 3', 'Description Issue 3', 3);
+    ('Issue Name num 3', 'Description Issue 3', 3),
+    ('Issue Name num 4', '', NULL);
+
+
 
 

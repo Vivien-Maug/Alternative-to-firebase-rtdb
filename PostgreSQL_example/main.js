@@ -1,6 +1,6 @@
-
 // Todo: and manage the case membersName.indexOf in modifyIssue
 const membersName = new Map();
+const highlightElements = new Map();
 
 const issueNameRow = {
     id: 0,
@@ -29,8 +29,12 @@ const table = {
 };
 
 
-function addIssue(id, name, description, member_id) {
+function addIssue(id, name, description, member_id, toHighlight = false) {
+    if (!description) {
+        description = '';
+    }
     const trHtml = document.createElement("tr");
+    trHtml.id = `issueTr${id}`;
     const thId = document.createElement("th");
     thId.innerHTML = id;
     thId.setAttribute("scope", "row");
@@ -55,43 +59,71 @@ function addIssue(id, name, description, member_id) {
     trHtml.appendChild(tdName);
     trHtml.appendChild(tdDesc);
     trHtml.appendChild(tdAssigned);
+    if (toHighlight) {
+
+        trHtml.classList.add("table-primary");
+        if (highlightElements.has(trHtml.id)) {
+            clearTimeout(highlightElements.get(trHtml.id));
+        }
+        const timeout = setTimeout(() => {
+            document.getElementById(trHtml.id).classList.remove("table-primary");
+            highlightElements.delete(trHtml.id);
+        }, 1000);
+        highlightElements.set(trHtml.id, timeout);
+    }
     document.getElementById("tbodyIssues").appendChild(trHtml);
 
 
     document.getElementById(`issueName${id}`).addEventListener('input', (event) => {
-        console.log(`You modify: ${event.target.value}`);
         websocket.send("" + action.modifyToDB + table.issue + issueNameRow.name + JSON.stringify([id, event.target.value]));
     });
     document.getElementById(`issueDescription${id}`).addEventListener('input', (event) => {
-        console.log(`You modify: ${event.target.value}`);
         websocket.send("" + action.modifyToDB + table.issue + issueNameRow.desc + JSON.stringify([id, event.target.value]));
     });
     document.getElementById(`issueAssignedTo${id}`).addEventListener('input', (event) => {
-        console.log(`You modify: ${event.target.value}`);
         let idMember;
         membersName.forEach((name, id) => {
             if (event.target.value === name) {
                 idMember = id;
             }
         });
-        if (idMember) {
-            websocket.send("" + action.modifyToDB + table.issue + issueNameRow.member + JSON.stringify([id, idMember]));
-        } else {
-            // TODO
-        }
+        websocket.send("" + action.modifyToDB + table.issue + issueNameRow.member + JSON.stringify([id, idMember ? idMember : undefined]));
     });
 }
 
 function modifyIssue(id, key, value) {
-    if (key === issueNameRow.name) {
-        document.getElementById(`issueName${id}`).value = value;
+    let elementId;
+    switch (key) {
+        case issueNameRow.name:
+            elementId = `issueName${id}`;
+            break;
+        case issueNameRow.desc:
+            elementId = `issueDescription${id}`;
+            break;
+        case issueNameRow.member:
+            elementId = `issueAssignedTo${id}`;
+            break;
+        default:
+            console.error('Bad key');
+            return;
     }
-    else if (key === issueNameRow.desc) {
-        document.getElementById(`issueDescription${id}`).value = value;
+    if (key == issueNameRow.member) {
+        document.getElementById(elementId).getElementsByTagName('option')[value ? value : 0].selected = 'selected';
+    } else {
+        document.getElementById(elementId).value = value;
     }
-    else if (key === issueNameRow.member) {
-        document.getElementById(`issueAssignedTo${id}`).getElementsByTagName('option')[value].selected = 'selected';
+
+    document.getElementById(elementId).classList.add("bg-danger");
+    document.getElementById(elementId).classList.add("text-white");
+    if (highlightElements.has(elementId)) {
+        clearTimeout(highlightElements.get(elementId));
     }
+    const timeout = setTimeout(() => {
+        document.getElementById(elementId).classList.remove("bg-danger");
+        document.getElementById(elementId).classList.remove("text-white");
+        highlightElements.delete(elementId);
+    }, 1000);
+    highlightElements.set(elementId, timeout);
 }
 
 let websocket = null;
@@ -110,17 +142,52 @@ try {
 
         this.onmessage = function (event) {
             if (event.data !== "error") {
+                let data;
+                switch (parseInt(event.data.charAt(0))) {
+                    case action.init:
+                        data = JSON.parse(event.data.substring(1));
+                        const membersLst = data[0];
+                        const issuesLst = data[1];
+                        membersLst.forEach(member => {
+                            membersName.set(member[memberNameRow.id], member[memberNameRow.name]);
+                        });
+                        issuesLst.forEach(issue => {
+                            addIssue(issue[issueNameRow.id], issue[issueNameRow.name], issue[issueNameRow.desc], issue[issueNameRow.member]); // TODO: manage case NULL for issue.member_id
+                        });
+                        break;
+                    case action.DB_modify:
+                        data = JSON.parse(event.data.substring(3));
+                        switch (parseInt(event.data.charAt(1))) {
+                            case table.member:
+                                // TODO
+                                break;
+                            case table.issue:
+                                modifyIssue(data[0], parseInt(event.data.charAt(2), 10), data[1]);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case action.DB_new:
+                        const newId = event.data.substring(2);
+                        switch (parseInt(event.data.charAt(1))) {
+                            case table.member:
+                                // TODO
+                                break;
+                            case table.issue:
+                                addIssue(newId, 'New issue', '', undefined, true);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+
+                    default:
+                        console.error("Bad data in websocket");
+                        break;
+                }
                 if (event.data.startsWith(action.init)) {
-                    console.log(JSON.parse(event.data.substring(1)));
-                    const data = JSON.parse(event.data.substring(1));
-                    const membersLst = data[0];
-                    const issuesLst = data[1];
-                    membersLst.forEach(member => {
-                        membersName.set(member[memberNameRow.id], member[memberNameRow.name]);
-                    });
-                    issuesLst.forEach(issue => {
-                        addIssue(issue[issueNameRow.id], issue[issueNameRow.name], issue[issueNameRow.desc], issue[issueNameRow.member]); // TODO: manage case NULL for issue.member_id
-                    });
+
                 }
 
             }
@@ -129,3 +196,8 @@ try {
 } catch (err) {
     console.error(err);
 }
+
+document.getElementById("btnNewIssue").addEventListener('click', (event) => {
+    websocket.send("" + action.addToDB + table.issue);
+    // TODO: Need to add an animation if this take too long
+});

@@ -85,11 +85,9 @@ const httpsServer = https.createServer(options, function (req, res) {
     })
 }).listen(8000);
 console.log('Https server launched');
+
 /* ----------------------- Part for WebSocket ----------------------- */
 // Todo, separe fonctionnality (httpsServer and Websocket server) in several file/function
-
-// action = get, set, update, remove, listenEvent
-// dataAction = issue, member
 
 const wss = new WebSocket.Server({ server: httpsServer });
 
@@ -98,6 +96,7 @@ wss.on('connection', function connection(ws) {
         console.log("One new WebSocket connected");
     }
     ws.isAlive = true;
+    ws.id = "" + Date.now() + "-" + Math.random(); // Need to be better for an real use (use UUID for exemple)
     ws.on('pong', () => { ws.isAlive = true; });
     ws.on('message', function incoming(message) {
         console.log('Received: %s', message); // After the tests are conclusive, display this only on isDebugLogEnable value
@@ -105,9 +104,22 @@ wss.on('connection', function connection(ws) {
 
         switch (parseInt(message.charAt(0), 10)) {
             case action.modifyToDB:
-                modifyToDB(message.charAt(1), message.charAt(2), JSON.parse(message.substring(3)));
+                modifyToDB(ws, parseInt(message.charAt(1), 10), message.charAt(2), JSON.parse(message.substring(3)), () => {
+                    wss.clients.forEach(wsToNotify => {
+                        if (wsToNotify.id !== ws.id) {
+                            wsToNotify.send(action.DB_modify + message.substring(1));
+                        }
+                    });
+                });
                 break;
+            case action.addToDB:
+                addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
+                    wss.clients.forEach(wsToNotify => {
+                        wsToNotify.send(action.DB_new + message.charAt(1) + newId);
+                    });
+                });
 
+                break;
             default:
                 break;
         }
@@ -162,24 +174,54 @@ setInterval(() => {
     });
 }, 3000);
 
-function modifyToDB(table, rowIdToModify, data, ws) {
-    /* 
-        No modification of the issue_id is possible, then no issue_id in rowNameDB.
-        We need to manage the case issueNameRow.all, for now just ignore it
-    */
-    const rowNameDB = ["issue_name", "issue_description", "member_id"];
-    const rowName = rowNameDB[rowIdToModify - 1];
-    const values = [data[0], data[1]];
+function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
+    switch (tableId) {
+        case table.member:
 
-    const query = `UPDATE issue SET ${rowName} = $2 WHERE issue_id = $1;`
+            break;
+        case table.issue:
+            /* 
+                No modification of the issue_id is possible, then no issue_id in rowNameDB.
+                We need to manage the case issueNameRow.all, for now just ignore it
+            */
+            const rowNameDB = ["issue_name", "issue_description", "member_id"];
+            const rowName = rowNameDB[rowIdToModify - 1];
+            const values = [data[0], data[1]];
 
-    client
-        .query(query, values)
-        .then(res => {
-            // sent ok to client
-        })
-        .catch(e => console.error(e.stack))
-    console.log(query);
-    console.log(values);
+            const query = `UPDATE issue SET ${rowName} = $2 WHERE issue_id = $1;`
 
+            client
+                .query(query, values)
+                .then(res => {
+                    // sent ok to client
+                    callback();
+                })
+                .catch(e => console.error(e.stack));
+            break;
+        default:
+            ws.send("error");
+            break;
+    }
+}
+
+
+
+function addToDB(ws, tableId, callback) {
+    switch (tableId) {
+        case table.member:
+            break;
+        case table.issue:
+            client
+                .query("INSERT INTO issue (issue_name) VALUES ('New issue') RETURNING issue_id;")
+                .then(res => {
+                    callback(res.rows[0]['issue_id']);
+                })
+                .catch(e => {
+                    console.error(e.stack);
+                    ws.send("error");
+                })
+            break;
+        default:
+            break;
+    }
 }
