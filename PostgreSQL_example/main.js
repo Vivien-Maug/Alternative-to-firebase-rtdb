@@ -268,12 +268,18 @@ try {
                         switch (parseInt(event.data.charAt(1))) {
                             case table.member:
                                 document.getElementById("btnNewMember").removeAttribute("disabled");
-                                document.getElementById("spinnerBtnNewMember").remove();
+                                const spinnerBtnNewMember = document.getElementById("spinnerBtnNewMember");
+                                if (spinnerBtnNewMember) {
+                                    spinnerBtnNewMember.remove();
+                                }
                                 addMember(newId, '', true);
                                 break;
                             case table.issue:
                                 document.getElementById("btnNewIssue").removeAttribute("disabled");
-                                document.getElementById("spinnerBtnNewIssue").remove();
+                                const spinnerBtnNewIssue = document.getElementById("spinnerBtnNewIssue");
+                                if (spinnerBtnNewIssue) {
+                                    spinnerBtnNewIssue.remove();
+                                }
                                 addIssue(newId, '', '', undefined, true);
                                 break;
                             default:
