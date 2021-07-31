@@ -21,14 +21,20 @@ const action = {
     removeToDB: 3,
     DB_new: 4,
     DB_modify: 5,
-    DB_remove: 6
+    DB_remove: 6,
+    error: 7
 };
 const table = {
     member: 0,
-    issue: 1
+    issue: 1,
+    unknown: 2
 };
 const error = {
-    deleteMemberAssigned: 0
+    unableToInit: 0,
+    unableToAdd: 1,
+    unableToModify: 2,
+    unableToDelete: 3,
+    deleteMemberAssigned: 4
 }
 
 
@@ -235,89 +241,148 @@ try {
         };
 
         this.onmessage = function (event) {
-            if (event.data !== "error") {
-                let data;
-                switch (parseInt(event.data.charAt(0))) {
-                    case action.init:
-                        data = JSON.parse(event.data.substring(1));
-                        const membersLst = data[0];
-                        const issuesLst = data[1];
-                        membersLst.forEach(member => {
-                            membersName.set(member[memberNameRow.id], member[memberNameRow.name]);
-                            addMember(member[memberNameRow.id], member[memberNameRow.name]);
-                        });
-                        issuesLst.forEach(issue => {
-                            addIssue(issue[issueNameRow.id], issue[issueNameRow.name], issue[issueNameRow.desc], issue[issueNameRow.member]); // TODO: manage case NULL for issue.member_id
-                        });
-                        break;
-                    case action.DB_modify:
-                        data = JSON.parse(event.data.substring(3));
-                        switch (parseInt(event.data.charAt(1))) {
-                            case table.member:
-                                modifyMember(data[0], data[1]);
-                                break;
-                            case table.issue:
-                                modifyIssue(data[0], parseInt(event.data.charAt(2), 10), data[1]);
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    case action.DB_new:
-                        const newId = event.data.substring(2);
-                        switch (parseInt(event.data.charAt(1))) {
-                            case table.member:
-                                document.getElementById("btnNewMember").removeAttribute("disabled");
-                                const spinnerBtnNewMember = document.getElementById("spinnerBtnNewMember");
-                                if (spinnerBtnNewMember) {
-                                    spinnerBtnNewMember.remove();
-                                }
-                                addMember(newId, '', true);
-                                break;
-                            case table.issue:
-                                document.getElementById("btnNewIssue").removeAttribute("disabled");
-                                const spinnerBtnNewIssue = document.getElementById("spinnerBtnNewIssue");
-                                if (spinnerBtnNewIssue) {
-                                    spinnerBtnNewIssue.remove();
-                                }
-                                addIssue(newId, '', '', undefined, true);
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    case action.DB_remove:
-                        const id = event.data.substring(2);
-                        switch (parseInt(event.data.charAt(1))) {
-                            case table.member:
-                                document.getElementById(`memberTr${id}`).remove();
-                                break;
-                            case table.issue:
-                                document.getElementById(`issueTr${id}`).remove();
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
+            console.log(event.data);
+            let data;
+            switch (parseInt(event.data.charAt(0))) {
+                case action.init:
+                    data = JSON.parse(event.data.substring(1));
+                    console.log(data);
+                    const membersLst = data[0];
+                    const issuesLst = data[1];
+                    membersLst.forEach(member => {
+                        membersName.set(member[memberNameRow.id], member[memberNameRow.name]);
+                        addMember(member[memberNameRow.id], member[memberNameRow.name]);
+                    });
+                    issuesLst.forEach(issue => {
+                        addIssue(issue[issueNameRow.id], issue[issueNameRow.name], issue[issueNameRow.desc], issue[issueNameRow.member]); // TODO: manage case NULL for issue.member_id
+                    });
+                    break;
+                case action.DB_modify:
+                    data = JSON.parse(event.data.substring(3));
+                    switch (parseInt(event.data.charAt(1))) {
+                        case table.member:
+                            modifyMember(data[0], data[1]);
+                            break;
+                        case table.issue:
+                            modifyIssue(data[0], parseInt(event.data.charAt(2), 10), data[1]);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case action.DB_new:
+                    const newId = event.data.substring(2);
+                    switch (parseInt(event.data.charAt(1))) {
+                        case table.member:
+                            document.getElementById("btnNewMember").removeAttribute("disabled");
+                            const spinnerBtnNewMember = document.getElementById("spinnerBtnNewMember");
+                            if (spinnerBtnNewMember) {
+                                spinnerBtnNewMember.remove();
+                            }
+                            addMember(newId, '', true);
+                            break;
+                        case table.issue:
+                            document.getElementById("btnNewIssue").removeAttribute("disabled");
+                            const spinnerBtnNewIssue = document.getElementById("spinnerBtnNewIssue");
+                            if (spinnerBtnNewIssue) {
+                                spinnerBtnNewIssue.remove();
+                            }
+                            addIssue(newId, '', '', undefined, true);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case action.DB_remove:
+                    const id = event.data.substring(2);
+                    switch (parseInt(event.data.charAt(1))) {
+                        case table.member:
+                            const member = document.getElementById(`memberTr${id}`);
+                            if (member) {
+                                member.remove();
+                            }
+                            break;
+                        case table.issue:
+                            const issue = document.getElementById(`issueTr${id}`);
+                            if (issue) {
+                                issue.remove();
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case action.error:
+                    switch (parseInt(event.data.charAt(1))) {
+                        case error.unableToInit:
+                            // TODO: Make a better message
+                            alert("Unable to get the first data, please refresh the page.");
+                            break;
+                        case error.unableToAdd:
+                            // TODO: Make a better message
+                            switch (parseInt(event.data.charAt(2))) {
+                                case table.issue:
+                                    alert("Unable to add an issue. Please try again.");
+                                    break;
+                                case table.member:
+                                    alert("Unable to add an member. Please try again.");
+                                    break;
+                                case table.unknown:
+                                default:
+                                    alert("Unable to add the data. Please refresh the page.");
+                                    break;
+                            }
+                            break;
+                        case error.unableToModify:
+                            // TODO: Make a better message
+                            switch (parseInt(event.data.charAt(2))) {
+                                case table.issue:
+                                    alert("Unable to edit an issue. Please refresh the page.");
+                                    break;
+                                case table.member:
+                                    alert("Unable to edit an member. Please refresh the page.");
+                                    break;
+                                case table.unknown:
+                                default:
+                                    alert("Unable to edit the data. Please refresh the page.");
+                                    break;
+                            }
+                            break;
+                        case error.unableToDelete:
+                            // TODO: Make a better message
+                            switch (parseInt(event.data.charAt(2))) {
+                                // TODO: remove the blocking of the associated buttons
+                                case table.issue:
+                                    alert("Unable to delete an issue. Please try again.");
+                                    break;
+                                case table.member:
+                                    alert("Unable to delete an member. Please try again.");
+                                    break;
+                                case table.unknown:
+                                default:
+                                    alert("Unable to delete the data. Please try again.");
+                                    break;
+                            }
+                            break;
+                        case error.deleteMemberAssigned:
+                            const memberId = event.data.substring(2);
+                            const element = document.getElementById(`memberRemove${memberId}`);
+                            // TODO: Make a better message
+                            alert("Unable to delete a member whose issues are assigned. Change the issues first.");
+                            break;
 
-                    default:
-                        console.error("Bad data in websocket");
-                        break;
-                }
-            }
-            else {
-                event.data = event.data.substring("error".length);
-                switch (parseInt(event.data.charAt(0), 10)) {
-                    case error.deleteMemberAssigned:
-                        const memberId = event.data.substring(1);
-                        const element = document.getElementById(`memberRemove${memberId}`);
-                        // TODO ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                        break;
+                        default:
+                            break;
+                    }
+                    break;
 
-                    default:
-                        break;
-                }
+                default:
+                    console.error("Bad data in websocket");
+                    break;
             }
+
+
+
         };
     };
 } catch (err) {

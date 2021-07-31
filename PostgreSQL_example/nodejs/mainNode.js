@@ -7,6 +7,7 @@ const dataConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 
 const isDebugLogEnable = true;
 const resetDatabase = true;
+const addArtificialLag = true;
 
 const issueNameRow = {
     id: 0,
@@ -27,14 +28,20 @@ const action = {
     removeToDB: 3,
     DB_new: 4,
     DB_modify: 5,
-    DB_remove: 6
+    DB_remove: 6,
+    error: 7
 };
 const table = {
     member: 0,
-    issue: 1
+    issue: 1,
+    unknown: 2
 };
 const error = {
-    deleteMemberAssigned: 0
+    unableToInit: 0,
+    unableToAdd: 1,
+    unableToModify: 2,
+    unableToDelete: 3,
+    deleteMemberAssigned: 4
 }
 
 const client = new Client({
@@ -103,36 +110,46 @@ wss.on('connection', function connection(ws) {
     ws.on('pong', () => { ws.isAlive = true; });
     ws.on('message', function incoming(message) {
         console.log('Received: %s', message); // After the tests are conclusive, display this only on isDebugLogEnable value
+        const manageMessage = (message, ws, wss) => {
+            switch (parseInt(message.charAt(0), 10)) {
+                case action.modifyToDB:
+                    modifyToDB(ws, parseInt(message.charAt(1), 10), message.charAt(2), JSON.parse(message.substring(3)), () => {
+                        wss.clients.forEach(wsToNotify => {
+                            if (wsToNotify.id !== ws.id) {
+                                wsToNotify.send(action.DB_modify + message.substring(1));
+                            }
+                        });
+                    });
+                    break;
+                case action.addToDB:
+                    console.log("test");
+                    addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
+                        wss.clients.forEach(wsToNotify => {
+                            wsToNotify.send(action.DB_new + message.charAt(1) + newId);
+                        });
+                    });
+                    break;
+                case action.removeToDB:
+                    removeToDB(ws, parseInt(message.charAt(1), 10), parseInt(message.substring(2), 10), (id) => {
+                        wss.clients.forEach(wsToNotify => {
+                            wsToNotify.send(action.DB_remove + message.charAt(1) + id);
+                        });
+                    });
 
-        switch (parseInt(message.charAt(0), 10)) {
-            case action.modifyToDB:
-                modifyToDB(ws, parseInt(message.charAt(1), 10), message.charAt(2), JSON.parse(message.substring(3)), () => {
-                    wss.clients.forEach(wsToNotify => {
-                        if (wsToNotify.id !== ws.id) {
-                            wsToNotify.send(action.DB_modify + message.substring(1));
-                        }
-                    });
-                });
-                break;
-            case action.addToDB:
-                console.log("test");
-                addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
-                    wss.clients.forEach(wsToNotify => {
-                        wsToNotify.send(action.DB_new + message.charAt(1) + newId);
-                    });
-                });
-                break;
-            case action.removeToDB:
-                removeToDB(ws, parseInt(message.charAt(1), 10), parseInt(message.substring(2), 10), (id) => {
-                    wss.clients.forEach(wsToNotify => {
-                        wsToNotify.send(action.DB_remove + message.charAt(1) + id);
-                    });
-                });
-
-                break;
-            default:
-                break;
+                    break;
+                default:
+                    break;
+            }
+        };
+        if (addArtificialLag) {
+            setTimeout(() => {
+                manageMessage(message, ws, wss);
+            }, 500);
+        } else {
+            manageMessage(message, ws, wss);
         }
+
+
     });
     ws.on('close', function close() {
         if (isDebugLogEnable) {
@@ -154,14 +171,15 @@ wss.on('connection', function connection(ws) {
                     }
                     initData[table.issue] = res.rows;
                     ws.send(action.init + JSON.stringify(initData));
+                    console.log(action.init + JSON.stringify(initData));
                 })
                 .catch(e => {
-                    ws.send("error");
+                    ws.send("" + action.error + error.init);
                     console.error(e.stack)
                 });
         })
         .catch(e => {
-            ws.send("error");
+            ws.send("" + action.error + error.init);
             console.error(e.stack)
         });
 
@@ -219,7 +237,7 @@ function modifyToDB(ws, tableId, rowIdToModify, data, callback) {
                 .catch(e => console.error(e.stack));
             break;
         default:
-            ws.send("error");
+            ws.send("" + action.error + error.modifyToDB + table.unknown);
             break;
     }
 }
@@ -234,7 +252,7 @@ function addToDB(ws, tableId, callback) {
                 })
                 .catch(e => {
                     console.error(e.stack);
-                    ws.send("error");
+                    ws.send("" + action.error + error.unableToAdd + table.member);
                 })
             break;
         case table.issue:
@@ -245,11 +263,11 @@ function addToDB(ws, tableId, callback) {
                 })
                 .catch(e => {
                     console.error(e.stack);
-                    ws.send("error");
+                    ws.send("" + action.error + error.unableToAdd + table.issue);
                 })
             break;
         default:
-            ws.send("error");
+            ws.send("" + action.error + error.unableToAdd + table.unknown);
             break;
     }
 }
@@ -268,15 +286,15 @@ function removeToDB(ws, tableId, id, callback) {
                             })
                             .catch(e => {
                                 console.error(e.stack);
-                                ws.send("error" + error.deleteMemberAssigned + id);
+                                ws.send("" + action.error + error.unableToDelete + table.member + id);
                             });
                     } else {
-                        // TODO
+                        ws.send("" + action.error + error.unableToDelete + table.member + id);
                     }
                 })
                 .catch(e => {
                     console.error(e.stack);
-                    ws.send("error");
+                    ws.send("" + action.error + error.deleteMemberAssigned + table.member + id);
                 });
 
             break;
@@ -288,11 +306,11 @@ function removeToDB(ws, tableId, id, callback) {
                 })
                 .catch(e => {
                     console.error(e.stack);
-                    ws.send("error");
+                    ws.send("" + action.error + error.unableToDelete + table.issue + id);
                 });
             break;
         default:
-            ws.send("error");
+            ws.send("" + action.error + error.unableToDelete + table.issue + id);
             break;
     }
 }
