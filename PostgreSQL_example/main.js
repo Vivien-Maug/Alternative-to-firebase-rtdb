@@ -62,9 +62,9 @@ function addIssue(id, name, description, member_id, toHighlight = false) {
     selectAssigned.innerHTML = "<option>Select someone</option>";
     membersName.forEach((name, id) => {
         if (member_id === id)
-            selectAssigned.innerHTML += `<option idMember="${id}" selected>${name}</option>`;
+            selectAssigned.innerHTML += `<option idmember="${id}" selected>${name}</option>`;
         else
-            selectAssigned.innerHTML += `<option idMember="${id}">${name}</option>`;
+            selectAssigned.innerHTML += `<option idmember="${id}">${name}</option>`;
     });
     tdAssigned.appendChild(selectAssigned);
     const tdButtonRemove = document.createElement("td");
@@ -112,9 +112,11 @@ function addIssue(id, name, description, member_id, toHighlight = false) {
         websocket.send("" + action.modifyToDB + table.issue + issueNameRow.member + JSON.stringify([id, idMember ? idMember : undefined]));
     });
     document.getElementById(`issueRemove${id}`).addEventListener('click', (event) => {
+        const btnIssueRemove = document.getElementById(`issueRemove${id}`);
+        btnIssueRemove.innerHTML += ` <span class="spinner-border spinner-border-sm" id="spinnerBtnRemoveMember${id}" role="status" aria-hidden="true"></span>`;
+        btnIssueRemove.setAttribute("disabled", "");
         websocket.send("" + action.removeToDB + table.issue + id);
         // The deletion is performed after the server has accepted it
-        // TODO: Need to add an animation if this takes too long
     });
 }
 
@@ -158,7 +160,7 @@ function addMember(id, name, toHighlight = false) {
         // There may be a better way to get all this, but for this demo, it's enough.
         const selectsInDOM = Array.from(document.querySelectorAll("select")).filter(select => select.id.startsWith("issueAssignedTo"));
         selectsInDOM.forEach(select => {
-            select.innerHTML += `<option idMember="${id}">${name}</option>`;
+            select.innerHTML += `<option idmember="${id}">${name}</option>`;
         });
     }
 
@@ -208,7 +210,7 @@ function addMember(id, name, toHighlight = false) {
     });
     document.getElementById(`memberRemove${id}`).addEventListener('click', (event) => {
         const btnMemberRemove = document.getElementById(`memberRemove${id}`);
-        btnMemberRemove.innerHTML += ' <span class="spinner-border spinner-border-sm" id="spinnerBtnNewIssue" role="status" aria-hidden="true"></span>';
+        btnMemberRemove.innerHTML += ` <span class="spinner-border spinner-border-sm" id="spinnerBtnRemoveMember${id}" role="status" aria-hidden="true"></span>`;
         btnMemberRemove.setAttribute("disabled", "");
         websocket.send("" + action.removeToDB + table.member + id);
         // The deletion is performed after the server has accepted it
@@ -223,7 +225,7 @@ function modifyMember(id, name, toHighlight = false) {
 
     // There may be a better way to get all this, but for this demo, it's enough.
     document.querySelectorAll("option").forEach(option => {
-        if (option.getAttribute("idMember") == id) {
+        if (option.getAttribute("idmember") == id) {
             option.innerHTML = name;
         }
     });
@@ -261,7 +263,6 @@ try {
             switch (parseInt(event.data.charAt(0))) {
                 case action.init:
                     data = JSON.parse(event.data.substring(1));
-                    console.log(data);
                     const membersLst = data[0];
                     const issuesLst = data[1];
                     membersLst.forEach(member => {
@@ -317,6 +318,17 @@ try {
                             if (member) {
                                 member.remove();
                             }
+
+                            // There may be a better way to get all this, but for this demo, it's enough.
+                            const selectsInDOM = Array.from(document.querySelectorAll("select")).filter(select => select.id.startsWith("issueAssignedTo"));
+                            selectsInDOM.forEach(select => {
+                                const startIndex = select.innerHTML.indexOf(`<option idmember="${id}">`);
+                                if (startIndex != -1) {
+                                    const endIndex = select.innerHTML.indexOf(`</option>`, startIndex) + "</option>".length;
+                                    console.log("Start= " + endIndex);
+                                    select.innerHTML = select.innerHTML.substring(0, startIndex) + select.innerHTML.substring(endIndex);
+                                }
+                            });
                             break;
                         case table.issue:
                             const issue = document.getElementById(`issueTr${id}`);
@@ -339,9 +351,19 @@ try {
                             switch (parseInt(event.data.charAt(2))) {
                                 case table.issue:
                                     alert("Unable to add an issue. Please try again.");
+                                    document.getElementById("btnNewIssue").removeAttribute("disabled");
+                                    const spinnerBtnNewIssue = document.getElementById("spinnerBtnNewIssue");
+                                    if (spinnerBtnNewIssue) {
+                                        spinnerBtnNewIssue.remove();
+                                    }
                                     break;
                                 case table.member:
                                     alert("Unable to add an member. Please try again.");
+                                    document.getElementById("btnNewMember").removeAttribute("disabled");
+                                    const spinnerBtnNewMember = document.getElementById("spinnerBtnNewMember");
+                                    if (spinnerBtnNewMember) {
+                                        spinnerBtnNewMember.remove();
+                                    }
                                     break;
                                 case table.unknown:
                                 default:
@@ -381,10 +403,12 @@ try {
                             }
                             break;
                         case error.deleteMemberAssigned:
-                            const memberId = event.data.substring(2);
-                            const element = document.getElementById(`memberRemove${memberId}`);
                             // TODO: Make a better message
                             alert("Unable to delete a member whose issues are assigned. Change the issues first.");
+
+                            const memberId = event.data.substring(2);
+                            document.getElementById(`memberRemove${memberId}`).removeAttribute("disabled");
+                            document.getElementById(`spinnerBtnRemoveMember${memberId}`).remove();
                             break;
                         default:
                             break;
@@ -407,7 +431,6 @@ document.getElementById("btnNewIssue").addEventListener('click', (event) => {
 
     websocket.send("" + action.addToDB + table.issue);
     // The addition is done after the server has accepted it
-    // TODO: Need to add an animation if this takes too long
 });
 
 document.getElementById("btnNewMember").addEventListener('click', (event) => {
@@ -417,7 +440,6 @@ document.getElementById("btnNewMember").addEventListener('click', (event) => {
 
     websocket.send("" + action.addToDB + table.member);
     // The addition is done after the server has accepted it
-    // TODO: Need to add an animation if this takes too long
 });
 
 document.getElementById("btnShowMembers").addEventListener('click', (event) => {

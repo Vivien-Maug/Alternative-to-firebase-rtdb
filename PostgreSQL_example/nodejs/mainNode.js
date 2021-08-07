@@ -289,12 +289,12 @@ function removeToDB(ws, tableId, id, callback) {
                                 ws.send("" + action.error + error.unableToDelete + table.member + id);
                             });
                     } else {
-                        ws.send("" + action.error + error.unableToDelete + table.member + id);
+                        ws.send("" + action.error + error.deleteMemberAssigned + id);
                     }
                 })
                 .catch(e => {
                     console.error(e.stack);
-                    ws.send("" + action.error + error.deleteMemberAssigned + table.member + id);
+                    ws.send("" + action.error + error.deleteMemberAssigned + id);
                 });
 
             break;
