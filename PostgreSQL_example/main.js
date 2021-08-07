@@ -200,8 +200,8 @@ function addMember(id, name, toHighlight = false) {
     });
     document.getElementById(`memberRemove${id}`).addEventListener('click', (event) => {
         const btnMemberRemove = document.getElementById(`memberRemove${id}`);
-        btnNewIssue.innerHTML += ' <span class="spinner-border spinner-border-sm" id="spinnerBtnNewIssue" role="status" aria-hidden="true"></span>';
-        btnNewIssue.setAttribute("disabled", "");
+        btnMemberRemove.innerHTML += ' <span class="spinner-border spinner-border-sm" id="spinnerBtnNewIssue" role="status" aria-hidden="true"></span>';
+        btnMemberRemove.setAttribute("disabled", "");
         websocket.send("" + action.removeToDB + table.member + id);
         // The deletion is performed after the server has accepted it
         // TODO: Need to add an animation if this takes too long
@@ -370,19 +370,14 @@ try {
                             // TODO: Make a better message
                             alert("Unable to delete a member whose issues are assigned. Change the issues first.");
                             break;
-
                         default:
                             break;
                     }
                     break;
-
                 default:
                     console.error("Bad data in websocket");
                     break;
             }
-
-
-
         };
     };
 } catch (err) {
