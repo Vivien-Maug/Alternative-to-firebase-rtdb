@@ -97,7 +97,7 @@ const httpsServer = https.createServer(options, function (req, res) {
 console.log('Https server launched');
 
 /* ----------------------- Part for WebSocket ----------------------- */
-// Todo, separe fonctionnality (httpsServer and Websocket server) in several file/function
+// TODO, separe fonctionnality (httpsServer and Websocket server) in several file/function
 
 const wss = new WebSocket.Server({ server: httpsServer });
 
