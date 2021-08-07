@@ -63,9 +63,9 @@ function addIssue(id, name, description, member_id, toHighlight = false) {
     selectAssigned.innerHTML = "<option>Select someone</option>";
     membersName.forEach((name, id) => {
         if (member_id === id)
-            selectAssigned.innerHTML += `<option selected>${name}</option>`;
+            selectAssigned.innerHTML += `<option idMember="${id}" selected>${name}</option>`;
         else
-            selectAssigned.innerHTML += `<option>${name}</option>`;
+            selectAssigned.innerHTML += `<option idMember="${id}">${name}</option>`;
     });
     tdAssigned.appendChild(selectAssigned);
     const tdButtonRemove = document.createElement("td");
@@ -155,6 +155,14 @@ function modifyIssue(id, key, value) {
 }
 
 function addMember(id, name, toHighlight = false) {
+    if (toHighlight) { // This means that it is a new member, so update all "select member" in the issue view.
+        // There may be a better way to get all this, but for this demo, it's enough.
+        const selectsInDOM = Array.from(document.querySelectorAll("select")).filter(select => select.id.startsWith("issueAssignedTo"));
+        selectsInDOM.forEach(select => {
+            select.innerHTML += `<option idMember="${id}">${name}</option>`;
+        });
+    }
+
     const trHtml = document.createElement("tr");
     trHtml.id = `memberTr${id}`;
     const thId = document.createElement("th");
@@ -208,10 +216,16 @@ function addMember(id, name, toHighlight = false) {
     });
 }
 
-function modifyMember(id, value) {
+function modifyMember(id, name) {
     const elementId = `memberName${id}`;
 
-    document.getElementById(elementId).value = value;
+    document.getElementById(elementId).value = name;
+    document.querySelectorAll("option").forEach(option => {
+        console.log("id = " + option.getAttribute("idMember"));
+        if (option.getAttribute("idMember") == id) {
+            option.innerText = name;
+        }
+    });
 
     document.getElementById(elementId).classList.add("bg-info");
     document.getElementById(elementId).classList.add("text-dark");
