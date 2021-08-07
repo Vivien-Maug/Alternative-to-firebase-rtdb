@@ -1,4 +1,3 @@
-// Todo: and manage the case membersName.indexOf in modifyIssue
 const membersName = new Map();
 const highlightElements = new Map();
 
@@ -204,6 +203,7 @@ function addMember(id, name, toHighlight = false) {
 
 
     document.getElementById(`memberName${id}`).addEventListener('input', (event) => {
+        modifyMember(id, event.target.value);
         websocket.send("" + action.modifyToDB + table.member + issueNameRow.name + JSON.stringify([id, event.target.value]));
     });
     document.getElementById(`memberRemove${id}`).addEventListener('click', (event) => {
@@ -216,14 +216,15 @@ function addMember(id, name, toHighlight = false) {
     });
 }
 
-function modifyMember(id, name) {
+function modifyMember(id, name, toHighlight = false) {
     const elementId = `memberName${id}`;
-
     document.getElementById(elementId).value = name;
+    membersName.set(id, name);
+
+    // There may be a better way to get all this, but for this demo, it's enough.
     document.querySelectorAll("option").forEach(option => {
-        console.log("id = " + option.getAttribute("idMember"));
         if (option.getAttribute("idMember") == id) {
-            option.innerText = name;
+            option.innerHTML = name;
         }
     });
 
@@ -275,7 +276,7 @@ try {
                     data = JSON.parse(event.data.substring(3));
                     switch (parseInt(event.data.charAt(1))) {
                         case table.member:
-                            modifyMember(data[0], data[1]);
+                            modifyMember(data[0], data[1], true);
                             break;
                         case table.issue:
                             modifyIssue(data[0], parseInt(event.data.charAt(2), 10), data[1]);
@@ -293,6 +294,7 @@ try {
                             if (spinnerBtnNewMember) {
                                 spinnerBtnNewMember.remove();
                             }
+                            membersName.set(newId, '');
                             addMember(newId, '', true);
                             break;
                         case table.issue:
