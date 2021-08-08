@@ -272,7 +272,6 @@ initPromise.push(database.ref("" + table.issue).once('value', (snapshot) => {
     }
 }));
 Promise.all(initPromise).then(() => {
-    console.log("Init done");
     database.ref("" + table.member).on('child_added', (snapshot) => {
         const data = snapshot.val();
         if (!membersName.has(snapshot.key)) {
@@ -287,14 +286,19 @@ Promise.all(initPromise).then(() => {
     });
     database.ref("" + table.issue).on('child_added', (snapshot) => {
         const data = snapshot.val();
-        if (!document.getElementById(`issueId${snapshot.key}`)) {
+        const issueId = snapshot.key;
+        if (!document.getElementById(`issueId${issueId}`)) {
             document.getElementById("btnNewIssue").removeAttribute("disabled");
             const spinnerBtnNewIssue = document.getElementById("spinnerBtnNewIssue");
             if (spinnerBtnNewIssue) {
                 spinnerBtnNewIssue.remove();
             }
-            addIssue(snapshot.key, data[issueNameRow.name], data[issueNameRow.desc], data[issueNameRow.member], true);
+            addIssue(issueId, data[issueNameRow.name], data[issueNameRow.desc], data[issueNameRow.member], true);
         }
+        database.ref("" + table.issue + "/" + issueId).on('child_changed', (snapshot) => {
+            const data = snapshot.val();
+            modifyIssue(issueId, parseInt(snapshot.key), data);
+        });
     });
 
     database.ref("" + table.member).on('child_changed', (snapshot) => {
@@ -305,9 +309,6 @@ Promise.all(initPromise).then(() => {
     lstIssueToGetEvent.forEach(issueId => {
         database.ref("" + table.issue + "/" + issueId).on('child_changed', (snapshot) => {
             const data = snapshot.val();
-            console.log("issueId, snapshot.key, parseInt(data")
-            console.log(issueId + " " + snapshot.key + "  " + data);
-
             modifyIssue(issueId, parseInt(snapshot.key), data);
         });
     });
