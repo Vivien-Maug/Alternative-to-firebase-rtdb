@@ -13,14 +13,29 @@
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
 
+const issueNameRow = {
+    id: 0,
+    name: 1,
+    desc: 2,
+    member: 3
+};
+const memberNameRow = {
+    id: 0,
+    name: 1
+};
+const table = {
+    member: 0,
+    issue: 1
+};
+
 const log = document.getElementById("logs");
 
 document.getElementById("resetButton").addEventListener("click", () => {
     Promise.all([
-        database.ref('member').remove().catch(error => {
+        database.ref("" + table.member).remove().catch(error => {
             log.innerHTML += Date(Date.now()) + " Member remove: ERROR=" + error + "<br>";
         }),
-        database.ref('issue').remove().catch(error => {
+        database.ref("" + table.issue).remove().catch(error => {
             log.innerHTML += Date(Date.now()) + " Issue remove: ERROR=" + error + "<br>";
         }),
     ]).then(() => {
@@ -28,6 +43,7 @@ document.getElementById("resetButton").addEventListener("click", () => {
         log.innerHTML += Date(Date.now()) + " Issue remove: OK<br>";
 
         const members = ['Vivien', 'Aria', 'Paul', 'Anne'];
+        const membersId = [];
         const issues = [['Bad UI Display', 'In contact view, the text "click here" is not aligned.', 1],
         ['Bad translation', 'Description 2', 2],
         ['Issue Name num 3', 'Description Issue 3', 3],
@@ -35,9 +51,10 @@ document.getElementById("resetButton").addEventListener("click", () => {
 
         const promiseMembers = [];
         members.forEach(name => {
-            const id = database.ref('member').push().key;
-            promiseMembers.push(database.ref('member/' + id).set({
-                member_name: name
+            const id = database.ref("" + table.member).push().key;
+            membersId.push(id);
+            promiseMembers.push(database.ref(table.member + '/' + id).set({
+                [memberNameRow.name]: name
             }));
         });
         Promise.all(promiseMembers).then(() => {
@@ -47,11 +64,11 @@ document.getElementById("resetButton").addEventListener("click", () => {
         });
         const promiseIssues = [];
         issues.forEach(issue => {
-            const id = database.ref('issue').push().key;
-            promiseIssues.push(database.ref('issue/' + id).set({
-                issue_name: issue[0],
-                issue_description: issue[1],
-                member_id: issue[2]
+            const id = database.ref("" + table.issue).push().key;
+            promiseIssues.push(database.ref(table.issue + '/' + id).set({
+                [issueNameRow.name]: issue[0],
+                [issueNameRow.desc]: issue[1],
+                [issueNameRow.member]: (issue[2] != -1) ? membersId[issue[2]] : ""
             }));
         });
         Promise.all(promiseIssues).then(() => {
