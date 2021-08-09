@@ -122,7 +122,6 @@ wss.on('connection', function connection(ws) {
                     });
                     break;
                 case action.addToDB:
-                    console.log("test");
                     addToDB(ws, parseInt(message.charAt(1), 10), (newId) => {
                         wss.clients.forEach(wsToNotify => {
                             wsToNotify.send(action.DB_new + message.charAt(1) + newId);
