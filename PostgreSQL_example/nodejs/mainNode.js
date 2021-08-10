@@ -109,7 +109,9 @@ wss.on('connection', function connection(ws) {
     ws.id = "" + Date.now() + "-" + Math.random(); // Need to be better for an real use (use UUID for exemple)
     ws.on('pong', () => { ws.isAlive = true; });
     ws.on('message', function incoming(message) {
-        console.log('Received: %s', message); // After the tests are conclusive, display this only on isDebugLogEnable value
+        if (isDebugLogEnable) {
+            console.log('Received: %s', message);
+        }
         const manageMessage = (message, ws, wss) => {
             switch (parseInt(message.charAt(0), 10)) {
                 case action.modifyToDB:
@@ -170,7 +172,9 @@ wss.on('connection', function connection(ws) {
                     }
                     initData[table.issue] = res.rows;
                     ws.send(action.init + JSON.stringify(initData));
-                    console.log(action.init + JSON.stringify(initData));
+                    if (isDebugLogEnable) {
+                        console.log(action.init + JSON.stringify(initData));
+                    }
                 })
                 .catch(e => {
                     ws.send("" + action.error + error.init);

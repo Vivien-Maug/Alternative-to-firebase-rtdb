@@ -1,6 +1,6 @@
 # **Alternative-to-firebase**
 
-This is a small demo to test if we can have a real time database like Firebase, but with a PostgreSQL database with WebSocket for the real time side.
+This is a small demo to test if we can have a real time database like Firebase, but with a PostgreSQL database with WebSocket for the real time side. PostgreSQL is used here, but could be replaced quite quickly by any classical SQL database.
 
 The project has 2 parts (**PostgreSQL_example** and **Firebase_example**), each one including the same project, but realized according to the mentioned tool.
 
