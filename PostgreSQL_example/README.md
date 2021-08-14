@@ -10,9 +10,9 @@ In order to compensate for the immediacy that Firebase RTDB allows, a websocket 
 
 Node will use with 2 libraries: [node-postgres](https://node-postgres.com/) and [ws](https://github.com/websockets/ws).
 
-## How to launch the project
+## **How to launch the project**
 
-### Requirements
+### **Requirements**
 
 Before you can launch the node server, you must first create and modify 3 files ([nodejs/cert.pem](nodejs/cert.pem), [nodejs/key.pem](nodejs/key.pem), [nodejs/config.json](nodejs/config.json)).
 
@@ -30,7 +30,7 @@ For the file, you just have to create it and fill it with the necessary informat
 }
 ```
 
-### Launch the project
+### **Launch the project**
 
 Go to the nodejs folder and do:
 
@@ -38,26 +38,38 @@ Go to the nodejs folder and do:
 node mainNode.js
 ```
 
-## PostgreSQL database
+## **PostgreSQL database**
 
 Version : psql (PostgreSQL) 13.3
 
 With the node server it is possible to reset the database at each launch of the node server or not depending on the value of the variable **resetDatabase**. This will execute the SQL commands in this [file](nodejs/reset_table.sql)
 
 
-## Node 
+## **Node** 
 
 Version : v12.21.0
 
 Node is used here only in the context of a local environment, for an online use it would be necessary to make adaptations, especially in terms of security.
 
-## General information on the code
+## **General information on the code**
 
-### [mainNode.js](nodejs/mainNode.js)
+To limit the size of the communications, there are constants (*action*, *table*, *error*, ...) at the beginning of the files [mainNode.js](nodejs/mainNode.js) and  [main.js](main.js) that have the role of a correspondence table.
+
+### **Node: [mainNode.js](nodejs/mainNode.js)**
 
 At the beginning of the code of [mainNode.js](nodejs/mainNode.js) 3 boolean variables allow to manage some parameters:
 - *isDebugLogEnable* : display or not some logs
 - *resetDatabase* : at each launch of the script, reset or not the database
 - *addArtificialLag* : for each response returned by the websocket server, it is possible to add an artificial lag of 500ms (mainly to test response waiting animations for clients/browsers)
 
-> Note: 
+For the moment it has 2 parts:
+- the initialization of all services (https server, websocket server, and database connection)
+- the management of websocket communications
+
+> Note: *This file should be re-factored to improve readability.*
+
+### **Web page: [main.js](main.js)**
+
+Most of this file is similar to the one for the Firebase demo, except of course the part with Firebase which is replaced by websocket communications with the server (allowing the update in real time).
+
+> Note: *This file should be re-factored to improve readability.*
